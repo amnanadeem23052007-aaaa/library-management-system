@@ -1,0 +1,130 @@
+import CredentialsProvider from "next-auth/providers/credentials";
+import type { NextAuthOptions } from "next-auth";
+import bcrypt from "bcryptjs";
+
+import { connectDB } from "@/lib/mongodb";
+import User from "@/models/User";
+
+export const authOptions: NextAuthOptions = {
+  providers: [
+    CredentialsProvider({
+      name: "Credentials",
+
+      credentials: {
+        email: {
+          label: "Email",
+          type: "email",
+        },
+        password: {
+          label: "Password",
+          type: "password",
+        },
+        role: {
+          label: "Role",
+          type: "text",
+        },
+      },
+
+      async authorize(credentials) {
+        try {
+          if (!credentials?.email || !credentials?.password) {
+            console.log("AUTH: Missing credentials");
+            return null;
+          }
+
+          const email = String(credentials.email)
+            .trim()
+            .toLowerCase();
+
+          const password = String(credentials.password);
+
+          const requestedRole = String(credentials.role || "")
+            .trim()
+            .toLowerCase();
+
+          console.log("LOGIN:", {
+            email,
+            requestedRole,
+          });
+
+          await connectDB();
+
+          const user = await User.findOne({ email });
+
+          if (!user) {
+            console.log("AUTH: User not found");
+            return null;
+          }
+
+          const databaseRole = String(user.role)
+            .trim()
+            .toLowerCase();
+
+          console.log("USER ROLE:", databaseRole);
+
+          if (
+            requestedRole &&
+            databaseRole !== requestedRole
+          ) {
+            console.log("AUTH: Wrong role");
+            return null;
+          }
+
+          const passwordMatch = await bcrypt.compare(
+            password,
+            String(user.password)
+          );
+
+          if (!passwordMatch) {
+            console.log("AUTH: Wrong password");
+            return null;
+          }
+
+          console.log("AUTH: Login successful");
+
+          return {
+            id: user._id.toString(),
+            name: user.name,
+            email: user.email,
+            role: databaseRole,
+          };
+        } catch (error) {
+          console.error("AUTH ERROR:", error);
+          return null;
+        }
+      },
+    }),
+  ],
+
+  session: {
+    strategy: "jwt",
+  },
+
+  secret: process.env.NEXTAUTH_SECRET,
+
+  callbacks: {
+    async jwt({ token, user }) {
+      if (user) {
+        token.id = user.id;
+        token.role = user.role;
+      }
+
+      return token;
+    },
+
+    async session({ session, token }) {
+      if (session.user) {
+        session.user.id = String(token.id || "");
+        session.user.role = String(token.role || "");
+      }
+
+      return session;
+    },
+  },
+
+  pages: {
+    signIn: "/librarian-login",
+  },
+
+  debug: process.env.NODE_ENV === "development",
+};
