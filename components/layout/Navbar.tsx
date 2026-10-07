@@ -93,9 +93,16 @@ export default function Navbar({
 
   // Logout
   async function handleLogout() {
-    await signOut({
-      callbackUrl: "/librarian-login",
-    });
+    try {
+      await signOut({
+        callbackUrl: "/librarian-login",
+        redirect: false,
+      });
+    } catch (error) {
+      console.error("Logout error:", error);
+    } finally {
+      window.location.href = "/librarian-login";
+    }
   }
 
   // Search

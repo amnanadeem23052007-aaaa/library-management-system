@@ -167,16 +167,15 @@ export default function MemberDashboardLayout({
   // Logout
   const handleLogout = async () => {
     try {
-      await fetch("/api/auth/signout", {
-        method: "POST",
+      await signOut({
+        callbackUrl: "/member-login",
+        redirect: false,
       });
-    } catch {
-      // Ignore signout API errors
+    } catch (error) {
+      console.error("Logout error:", error);
+    } finally {
+      window.location.href = "/member-login";
     }
-
-    await signOut({
-      callbackUrl: "/member-login",
-    });
   };
 
   // Search
