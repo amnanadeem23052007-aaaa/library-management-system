@@ -5,19 +5,27 @@ import bcrypt from "bcryptjs";
 import { connectDB } from "@/lib/mongodb";
 import User from "@/models/User";
 
-// Ensure NEXTAUTH_URL is not mistakenly set to localhost in production deployments
+const PRODUCTION_URL =
+  process.env.NEXT_PUBLIC_APP_URL ||
+  (process.env.VERCEL_PROJECT_PRODUCTION_URL
+    ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+    : process.env.VERCEL_URL
+    ? `https://${process.env.VERCEL_URL}`
+    : "https://library-management-system-eight-puce.vercel.app");
+
+// Ensure NEXTAUTH_URL is properly set in production deployments
 if (
   process.env.NODE_ENV === "production" &&
-  process.env.NEXTAUTH_URL?.includes("localhost")
+  (!process.env.NEXTAUTH_URL || process.env.NEXTAUTH_URL.includes("localhost"))
 ) {
-  if (process.env.VERCEL_PROJECT_PRODUCTION_URL) {
-    process.env.NEXTAUTH_URL = `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`;
-  } else if (process.env.VERCEL_URL) {
-    process.env.NEXTAUTH_URL = `https://${process.env.VERCEL_URL}`;
-  } else {
-    delete process.env.NEXTAUTH_URL;
-  }
+  process.env.NEXTAUTH_URL = PRODUCTION_URL;
 }
+
+const secret =
+  process.env.NEXTAUTH_SECRET ||
+  process.env.AUTH_SECRET ||
+  process.env.JWT_SECRET ||
+  "bGrY6GbucaPWx4hphwv2CRxXnJMa7LSw";
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -114,13 +122,15 @@ export const authOptions: NextAuthOptions = {
     strategy: "jwt",
   },
 
-  secret: process.env.NEXTAUTH_SECRET,
+  secret,
 
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
         token.role = user.role;
+        if (user.name) token.name = user.name;
+        if (user.email) token.email = user.email;
       }
 
       return token;
@@ -130,6 +140,8 @@ export const authOptions: NextAuthOptions = {
       if (session.user) {
         session.user.id = String(token.id || "");
         session.user.role = String(token.role || "");
+        if (token.name) session.user.name = String(token.name);
+        if (token.email) session.user.email = String(token.email);
       }
 
       return session;

@@ -36,29 +36,33 @@ export default function LoginForm({ role }: LoginFormProps) {
     try {
       setLoading(true);
 
+      const targetUrl = role === "librarian" ? "/dashboard" : "/member";
+
       const result = await signIn("credentials", {
         email: email.trim().toLowerCase(),
         password,
         role,
         redirect: false,
+        callbackUrl: targetUrl,
       });
 
-      if (result?.error) {
+      console.log("LOGIN RESULT:", result);
+
+      if (!result?.ok || result?.error) {
+        const errorMsg =
+          result?.error || "Login failed. Please check your credentials.";
+        console.error("Login failed:", errorMsg, result);
         alert(
-          role === "librarian"
-            ? "Invalid librarian email or password"
-            : "Invalid member email or password"
+          result?.error === "CredentialsSignin"
+            ? (role === "librarian"
+                ? "Invalid librarian email or password"
+                : "Invalid member email or password")
+            : `Authentication error: ${errorMsg}`
         );
         return;
       }
 
-      if (role === "librarian") {
-        router.push("/dashboard");
-      } else {
-        router.push("/member");
-      }
-
-      router.refresh();
+      window.location.href = targetUrl;
     } catch (error) {
       console.error("Login error:", error);
       alert("Something went wrong while logging in.");
