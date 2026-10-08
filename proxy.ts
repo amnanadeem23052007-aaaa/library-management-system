@@ -4,11 +4,7 @@ import { getToken } from "next-auth/jwt";
 
 const PRODUCTION_URL =
   process.env.NEXT_PUBLIC_APP_URL ||
-  (process.env.VERCEL_PROJECT_PRODUCTION_URL
-    ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
-    : process.env.VERCEL_URL
-    ? `https://${process.env.VERCEL_URL}`
-    : "https://library-management-system-eight-puce.vercel.app");
+  "https://library-management-system-eight-puce.vercel.app";
 
 if (
   process.env.NODE_ENV === "production" &&
@@ -17,14 +13,16 @@ if (
   process.env.NEXTAUTH_URL = PRODUCTION_URL;
 }
 
-const secret =
-  process.env.NEXTAUTH_SECRET ||
-  process.env.AUTH_SECRET ||
-  process.env.JWT_SECRET ||
-  "bGrY6GbucaPWx4hphwv2CRxXnJMa7LSw";
-
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  const secret = process.env.NEXTAUTH_SECRET;
+
+  if (process.env.NODE_ENV === "production" && !secret) {
+    throw new Error(
+      "NEXTAUTH_SECRET environment variable is missing in production."
+    );
+  }
 
   const isSecure =
     request.nextUrl.protocol === "https:" ||
@@ -100,4 +98,4 @@ export const config = {
     "/member",
     "/member/:path*",
   ],
-};
+};

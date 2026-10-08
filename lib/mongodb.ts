@@ -38,11 +38,10 @@ export async function connectDB() {
 
 
     if (!cached.promise) {
-
-
-        cached.promise = mongoose.connect(MONGODB_URI as string)
-
-
+        cached.promise = mongoose.connect(MONGODB_URI as string).catch((err) => {
+            cached.promise = null;
+            throw err;
+        });
     }
 
 

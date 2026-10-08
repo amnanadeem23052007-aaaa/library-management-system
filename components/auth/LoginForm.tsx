@@ -65,7 +65,11 @@ export default function LoginForm({ role }: LoginFormProps) {
       window.location.href = targetUrl;
     } catch (error) {
       console.error("Login error:", error);
-      alert("Something went wrong while logging in.");
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Unexpected error during login.";
+      alert(`Authentication error: ${message}`);
     } finally {
       setLoading(false);
     }

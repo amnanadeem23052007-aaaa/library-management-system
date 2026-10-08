@@ -7,11 +7,7 @@ import User from "@/models/User";
 
 const PRODUCTION_URL =
   process.env.NEXT_PUBLIC_APP_URL ||
-  (process.env.VERCEL_PROJECT_PRODUCTION_URL
-    ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
-    : process.env.VERCEL_URL
-    ? `https://${process.env.VERCEL_URL}`
-    : "https://library-management-system-eight-puce.vercel.app");
+  "https://library-management-system-eight-puce.vercel.app";
 
 // Ensure NEXTAUTH_URL is properly set in production deployments
 if (
@@ -21,11 +17,7 @@ if (
   process.env.NEXTAUTH_URL = PRODUCTION_URL;
 }
 
-const secret =
-  process.env.NEXTAUTH_SECRET ||
-  process.env.AUTH_SECRET ||
-  process.env.JWT_SECRET ||
-  "bGrY6GbucaPWx4hphwv2CRxXnJMa7LSw";
+const secret = process.env.NEXTAUTH_SECRET;
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -48,9 +40,17 @@ export const authOptions: NextAuthOptions = {
       },
 
       async authorize(credentials) {
+        if (
+          process.env.NODE_ENV === "production" &&
+          !process.env.NEXTAUTH_SECRET
+        ) {
+          throw new Error(
+            "NEXTAUTH_SECRET environment variable is missing in production."
+          );
+        }
+
         try {
           if (!credentials?.email || !credentials?.password) {
-            console.log("AUTH: Missing credentials");
             return null;
           }
 
@@ -64,17 +64,11 @@ export const authOptions: NextAuthOptions = {
             .trim()
             .toLowerCase();
 
-          console.log("LOGIN:", {
-            email,
-            requestedRole,
-          });
-
           await connectDB();
 
           const user = await User.findOne({ email });
 
           if (!user) {
-            console.log("AUTH: User not found");
             return null;
           }
 
@@ -82,13 +76,10 @@ export const authOptions: NextAuthOptions = {
             .trim()
             .toLowerCase();
 
-          console.log("USER ROLE:", databaseRole);
-
           if (
             requestedRole &&
             databaseRole !== requestedRole
           ) {
-            console.log("AUTH: Wrong role");
             return null;
           }
 
@@ -98,11 +89,8 @@ export const authOptions: NextAuthOptions = {
           );
 
           if (!passwordMatch) {
-            console.log("AUTH: Wrong password");
             return null;
           }
-
-          console.log("AUTH: Login successful");
 
           return {
             id: user._id.toString(),
@@ -148,9 +136,9 @@ export const authOptions: NextAuthOptions = {
     },
 
     async redirect({ url, baseUrl }) {
-      // Allows relative callback URLs
+      // Relative paths must be resolved against baseUrl to produce a valid absolute URL
       if (url.startsWith("/")) {
-        return url;
+        return `${baseUrl}${url}`;
       }
 
       try {
@@ -161,7 +149,7 @@ export const authOptions: NextAuthOptions = {
           process.env.NODE_ENV === "production" &&
           parsedUrl.hostname === "localhost"
         ) {
-          return `${parsedUrl.pathname}${parsedUrl.search}`;
+          return `${baseUrl}${parsedUrl.pathname}${parsedUrl.search}`;
         }
 
         // Allows callback URLs on the same origin
@@ -169,15 +157,12 @@ export const authOptions: NextAuthOptions = {
           return url;
         }
 
-        // If the URL has a valid pathname, preserve the relative pathname
+        // If URL has a valid pathname but different host, preserve pathname on baseUrl
         if (parsedUrl.pathname) {
-          return `${parsedUrl.pathname}${parsedUrl.search}`;
+          return `${baseUrl}${parsedUrl.pathname}${parsedUrl.search}`;
         }
       } catch {
-        // Fallback for relative or malformed URLs
-        if (url.startsWith("/")) {
-          return url;
-        }
+        return baseUrl;
       }
 
       return baseUrl;
@@ -189,4 +174,4 @@ export const authOptions: NextAuthOptions = {
   },
 
   debug: process.env.NODE_ENV === "development",
-};
+};
