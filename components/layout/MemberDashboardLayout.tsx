@@ -548,7 +548,7 @@ export default function MemberDashboardLayout({
                   border
                   border-slate-100
                   z-50
-                ">
+                " style={{ padding: "10px" }}>
                   <div className="flex items-center justify-between pb-3 border-b border-slate-100" style={{ padding: "20px" }}>
                     <div>
                       <h4 className="font-bold text-slate-900 text-sm">

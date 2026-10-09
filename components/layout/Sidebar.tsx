@@ -202,7 +202,7 @@ export default function Sidebar({
                       ? "text-[#1838D1]"
                       : "text-white/85 group-hover:text-white group-hover:scale-110"
                     }
-                  `}
+                  `} style={{ marginLeft: "15px" }}
                 />
 
                 <span

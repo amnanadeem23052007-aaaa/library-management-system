@@ -260,7 +260,7 @@ export default function Navbar({
                 justify-center
                 ring-2
                 ring-white
-              ">
+              " >
                 {unreadCount}
               </span>
             )}
@@ -289,7 +289,7 @@ export default function Navbar({
                 pb-3
                 border-b
                 border-slate-100
-              " style={{ padding: "10px" }}>
+              " style={{ padding: "15px",marginBottom: "10px" }}>
                 <div>
                   <h4 className="
                     font-bold
@@ -319,7 +319,7 @@ export default function Navbar({
                       flex
                       items-center
                       gap-1
-                    "
+                    "   
                   >
                     <CheckCheck size={14} style={{ marginRight: "5px" }} />
                     Mark read
@@ -333,7 +333,7 @@ export default function Navbar({
                 space-y-2
                 max-h-72
                 overflow-y-auto
-              ">
+              " style={{ padding: "15px" }}>
                 {notifications.map((item) => (
                   <div
                     key={item.id}
